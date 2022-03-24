@@ -1,0 +1,15 @@
+certifi==2021.10.8
+cffi==1.15.0
+charset-normalizer==2.0.12
+cryptography==36.0.2
+idna==3.3
+pycparser==2.21
+pylxd==2.3.1
+python-dateutil==2.8.2
+PyYAML==6.0
+requests==2.27.1
+requests-toolbelt==0.9.1
+requests-unixsocket==0.3.0
+six==1.16.0
+urllib3==1.26.9
+ws4py==0.5.1

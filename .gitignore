@@ -1,0 +1,21 @@
+# GITIGNORE
+.vscode/
+
+# From python gitignore
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Virtual env
+.venv/
+
+# Secret stuff
+/secret/**
+/input/**
+!/input/example.csv
+/output/**
+!/output/.exist
