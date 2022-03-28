@@ -8,7 +8,7 @@
 # - Runs commands to prep container for user
 # - Add row of login data to csv
 
-import argparse, yaml, os, base64
+import argparse, yaml, os, base64, requests
 from time import sleep
 from csv import DictReader, DictWriter
 from cryptography.hazmat.primitives import serialization as crypto_serialization
@@ -23,9 +23,10 @@ parser.add_argument('--mail', '-m', action='store_true', help="Include flag to a
 parser.add_argument('--output', '-o', action='store_true', help="Include flag to also output seperate keyfiles.")
 parser.add_argument('--sshportstart', '-s', type=int, default=52200, help="Ports will be opened for ssh from the given value forward.")
 parser.add_argument('--webportstart', '-w', type=int, default=58000, help="Ports will be opened for web from the given value forward.")
+parser.add_argument('--external_address', '-e', action='store_true', help="Get external address and use that as listening address. Overides -l paramater")
+parser.add_argument('--local_address', '-l', type=str, help="Specify when you are in a situation where the external IP for the listening address is not desirable.", default='localhost')
 
 _network_name = "nestbr0"
-_listen_address = "127.0.0.1"
 _profile_name = "nestpr0"
 _first_name_cname = "First_Name"
 _last_name_cname = "Last_Name"
@@ -44,6 +45,12 @@ def main(args):
 
     client = pylxd.Client()
     
+    # Set listen addres
+    listen_address = args.local_address
+    if args.external_address:
+        listen_address = requests.get('https://checkip.amazonaws.com').text.strip()
+        print(f"Using external IP: {listen_address}")
+
     ### Setup network and profile for the Nested Linux Containers.
     print("Setting up lxd profiles.")
     # Create Network when none exists.
@@ -55,10 +62,12 @@ def main(args):
         client.networks.create(_network_name, description="Nested Network for Linux Labs", type="bridge", config={
             "ipv4.address": "auto",
             "ipv4.nat": "true",
-            "ipv6.address": "none"
+            "ipv6.address": "none",
+            "ipv4.firewall": "false"
         })
         print(client.networks.get('nestbr0'))
-        os.system(f"lxc network forward create {_network_name} {_listen_address}")
+        # Create forward system
+        os.system(f"lxc network forward create {_network_name} {listen_address}") #TODO use pylxd api instead of CLI tool
     
     # Create a Profile when none exists
     # instructs the usage of latest Ubuntu version with cloud-init support
@@ -132,8 +141,8 @@ def main(args):
         instance.start(wait=True)
         # Create forwarding rules
         print("Setting up port forwards.")
-        forward_port(client, instance, _target_sshport, current_sshport)
-        forward_port(client, instance, _target_webport, current_webport)
+        forward_port(client, listen_address, instance, _target_sshport, current_sshport)
+        forward_port(client, listen_address, instance, _target_webport, current_webport)
 
         ### Create output ###
         output_rows.append({
@@ -164,7 +173,7 @@ def main(args):
 # Implementening network forward
 ####
 
-def forward_port(client: pylxd.Client, instance:InstanceModel.Instance, target_port:int, source_port:int):
+def forward_port(client:pylxd.Client, listen_address:str, instance:InstanceModel.Instance, target_port:int, source_port:int):
     # Get ipv4 from current instance
     # Ipv4 takes a bit to get going it seems compared to Ipv6
     inet = []
@@ -184,7 +193,8 @@ def forward_port(client: pylxd.Client, instance:InstanceModel.Instance, target_p
     #     }]
     # })
 
-    os.system(f"lxc network forward port add {_network_name} {_listen_address} tcp {source_port} {inet[0]['address']} {target_port}")
+    # Using the cli tool for now. TODO find a way to us pyxld
+    os.system(f"lxc network forward port add {_network_name} {listen_address} tcp {source_port} {inet[0]['address']} {target_port}")
 
 if __name__ == "__main__":
     main(parser.parse_args())
