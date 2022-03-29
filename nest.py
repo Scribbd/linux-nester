@@ -80,7 +80,9 @@ def main(args):
         print(f"Profile '{_profile_name}' already exists. None added.")
     else:
         print(f"Creating instance profile '{_profile_name}'.")
-        client.profiles.create(_profile_name, config={}, devices={
+        client.profiles.create(_profile_name, config={
+                "security.nesting": "true"
+            }, devices={
             "eth0": {
                 "name": "eth0",
                 "network": _network_name,

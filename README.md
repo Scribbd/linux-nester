@@ -1,5 +1,5 @@
 # Linux Nester
-A solution for creating and configuring many LXC containers with a csv input.
+A solution for creating and configuring many LXD containers with a csv input.
 
 The problem: Our participants are dependent on using a machine that can run a VM. In the past our participants were often overconfident about their own PC's capabilities. They would fall behind when they needed to get a loaner laptop.
 
@@ -16,11 +16,26 @@ A way of providing a 'hosted' solution for simple Linux environment.
 
 Achieved:
 - Linux containers (LXC) are used instead of Docker containers. LXC is the technology that docker is based on.
-- This solution can run on any host that can install LXD and LXC
+- LXD is an abstraction layer that provides a REST API and a CLI tool that makes LXC administration a lot easier.
+- This solution can run on any host that can install LXD and LXC.
 - LXD has a builtin network forwarding tool that allows many ssh ports be active on the host, redirected to individual container instances.
-- LXC is a full Linux container with its own init and systemd process. This allows for installing and running daemon tasks.
+- LXD containters are full Linux container with its own init and systemd processes. This allows for installing and running daemon tasks.
+- The containers are configured to be able to run Docker inside. However, this is not recommended.
 
 ## Usage
+### Clone
+This you have to do yourself. First install `git`:
+- `sudo apt update && sudo install git -y`
+Then clone this repository.
+- `git clone https://github.com/techgrounds/linux-nester.git`
+
+This repository is internal so you might need to login with a PAT. I you don't want to you could also use VSCode. It will bring over git credentials to the remote or allow you to authenticate with the browser on your localhost.
+- In VSCode install the following plugin: [Remote - SSH](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh).
+- Then use `CTRL`+`SHIFT`+`P` to get the command pallet.
+- Type `>Remote-SSH: Connect to Host...` autocomplete should also be able to pin it down with `SSH connect`.
+- Clone the repo!
+- You can get into a remote terminal with `ctrl`+\` and install git if the options are greyed out.
+
 ### Preparations
 Make sure the following is installed on your host:
 - Python3
@@ -36,13 +51,13 @@ You can run the following command to install the dependencies and activate a vir
 ```
 
 ### Host networking
-When using a cloud computer as your host make certain the following inbound rules are applied to your (N)SG:
+When using a cloud computer as your host make certain the following inbound ALLOW rules are applied to your (N)SG:
 
 | Protocol | Port range    | Source    | Description                                         |
 |----------|---------------|-----------|-----------------------------------------------------|
-| TCP      | 22            | [Your IP] | Admin access to LXC host                            |
-| TCP      | 52200 - 52299 | 0.0.0.0   | Forwarded ssh ports on host to LXC containers       |
-| TCP      | 58000 - 58099 | 0.0.0.0   | Forwarded http / web ports on host to LXC container |
+| TCP      | 22            | [Your IP] | Admin access to LXD host                            |
+| TCP      | 52200 - 52299 | 0.0.0.0   | Forwarded ssh ports on host to LXD containers       |
+| TCP      | 58000 - 58099 | 0.0.0.0   | Forwarded http / web ports on host to LXD container |
 
 This table assumes you use the default port settings. Ranges can be shrunk or grown to fit the actual number of containers.
 
@@ -71,6 +86,9 @@ Optional parameters:
 You will most likely get the desired result with using the following command:
 `python3 ./nest.py input/[file].csv -o -p -e`
 
+If you use windows opt for a zip archive:
+`python3 ./nest.py input/[file].csv -o -p -e -f zip`
+
 ### Output
 The `./output`-folder is used for all runs. In this a subfolder is generated for each individual run: `./output/Nest-{UNIX_timestamp}/`. Within this folder a `output.csv` file will contain the following:
     - `container_name`: Name of the container. `Nest-First_Name[0:2]-Last_Name`
@@ -86,9 +104,21 @@ When the `--output/-o` flag is present, a `key`-folder will be generated inside 
 When the `-package_output\-p` flag is present, the `./output/Nest-{UNIX_timestamp}/`-folder and subfolders will be compressed to a `.tar` file and made available in the `./output`-folder with `Nest-{UNIX_timestamp}` as its name. The `-package_format\-f` allows one to change compresion methods. Default is a non-compression tar archive.
 
 # Administration
-This program uses LXC and LXD. LXD provides a comprehensive CLI tool for administrative functions. 
+This program uses LXC and LXD. LXD provides a comprehensive CLI tool for administrative functions for LXC. You can find an introduction [here](https://linuxcontainers.org/lxd/introduction/). A more comprehensive guide to all commands is [here](https://linuxcontainers.org/lxd/docs/master/)
 
-## Enter container
+## Troubleshooting
+When you need to administer a specific container you can do the following:
+- SSH into the LXD host
+- Use `lxc list` to identify if the container is running
+    - Should it have stopped you can use `lxc start {NAME}`
+- If the problem started with a firewall blocking SSH traffic you can get root access with the following: `lxc exec {name} bash`
+    - You are now root in the given container.
+- If no one is able to access the containers it might mean your public IP got reasigned.
+    - Check current IP in the console
+    - Use the following command `lxc network forward list nestbr0`
+    - Check if this listener address is still the same
+    - If not use the following command `lxc network forward edit nestbr0 {Listed_IP}`
+    - Update the `listener_address:` line, save, and reload the daemon with `sudo snap restart lxd.daemon`
 
 # End of life
-A host that have outlived their stay should be removed as a whole. This script does not have an automated cleanup feature that allows recycling of hosts.
+A host that has outlived their stay should be removed as a whole. This script does not have an automated cleanup feature that enables recycling of hosts. Cattle not pets.
