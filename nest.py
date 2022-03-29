@@ -4,33 +4,34 @@
 # Steps in loop:
 # - Gen SSH key
 # - Start LXD container
-# - Get into container
-# - Runs commands to prep container for user
 # - Add row of login data to csv
+# - output keys / compress output
 
-import argparse, yaml, os, base64, requests
-from time import sleep
+import argparse, yaml, os, base64, requests, shutil
+from time import sleep, time
 from csv import DictReader, DictWriter
+
+# External libraries
 from cryptography.hazmat.primitives import serialization as crypto_serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
-
 import pylxd
 import pylxd.models.instance as InstanceModel
 
 parser = argparse.ArgumentParser(description="Linux Nester. Creates LXD containers for use with the Linux exercises of the TechGrounds Cloud Engineer.")
 parser.add_argument('participant_file', type=argparse.FileType('r', encoding='UTF-8-sig'), help="Path to csv file with at least the following headers: First_Name,Last_Name,E_Mail.")
-parser.add_argument('--mail', '-m', action='store_true', help="Include flag to also send emails to the participants.")
 parser.add_argument('--output', '-o', action='store_true', help="Include flag to also output seperate keyfiles.")
+parser.add_argument('--package_output', '-p', action='store_true', help="Include flag to compress all key files")
+parser.add_argument('--package_format', '-f', type=str, choices=['tar', 'zip', 'gztar', 'bztar', 'xztar'], default='tar', help="Set archiving method. Uses shutil. Look at shutil documentation what the options are.")
 parser.add_argument('--sshportstart', '-s', type=int, default=52200, help="Ports will be opened for ssh from the given value forward.")
 parser.add_argument('--webportstart', '-w', type=int, default=58000, help="Ports will be opened for web from the given value forward.")
 parser.add_argument('--external_address', '-e', action='store_true', help="Get external address and use that as listening address. Overides -l paramater")
 parser.add_argument('--local_address', '-l', type=str, help="Specify when you are in a situation where the external IP for the listening address is not desirable.", default='localhost')
+parser.add_argument('--ubuntu-version', '-u', type=str, default="focal", help="Version of Ubuntu the containers will use. Default to focal (20.04). Advised is hirsute or focal")
 
 _network_name = "nestbr0"
 _profile_name = "nestpr0"
 _first_name_cname = "First_Name"
 _last_name_cname = "Last_Name"
-_ubuntu_version = "hirsute"
 _target_sshport = 22
 _target_webport = 80
 
@@ -39,13 +40,17 @@ def main(args):
     
     # Get Reader from inputfile
     csv_reader = DictReader(args.participant_file, delimiter=",")
-    # Prepare output file
-    output_headers = ['ssh_port', 'web_port', 'user', 'key64']
+    # Prepare output environment and file variables
+    timestamp = time()
+    output_dir = f"output/nest_{timestamp}"
+    os.makedirs(output_dir)
+    output_headers = ['container_name','ssh_port', 'web_port', 'user', 'key64']
     output_rows = []
 
+    # Init clients
     client = pylxd.Client()
     
-    # Set listen addres
+    # Set listen address based on config
     listen_address = args.local_address
     if args.external_address:
         listen_address = requests.get('https://checkip.amazonaws.com').text.strip()
@@ -62,8 +67,7 @@ def main(args):
         client.networks.create(_network_name, description="Nested Network for Linux Labs", type="bridge", config={
             "ipv4.address": "auto",
             "ipv4.nat": "true",
-            "ipv6.address": "none",
-            "ipv4.firewall": "false"
+            "ipv6.address": "none"
         })
         print(client.networks.get('nestbr0'))
         # Create forward system
@@ -129,7 +133,7 @@ def main(args):
             "type": "container",
             "source": {
                 "type": "image",
-                "alias": _ubuntu_version,
+                "alias": args.ubuntu_version,
                 "server": "https://cloud-images.ubuntu.com/releases",
                 "protocol": "simplestreams",
             },
@@ -146,14 +150,17 @@ def main(args):
 
         ### Create output ###
         output_rows.append({
-            output_headers[0]: current_sshport, #sshport
-            output_headers[1]: current_webport, #webport
-            output_headers[2]: username, #user
-            output_headers[3]: base64.b64encode(private_key).decode("UTF-8") #key64
+            output_headers[0]: container_name, #container_name
+            output_headers[1]: current_sshport, #ssh_port
+            output_headers[2]: current_webport, #web_port
+            output_headers[3]: username, #user
+            output_headers[4]: base64.b64encode(private_key).decode("UTF-8") #key64
         })
 
         if args.output:
-            with open(f"output/{container_name}.pem", 'w', encoding='UTF8', newline='') as f:
+            keys_dir = f"{output_dir}/keys"
+            os.makedirs(keys_dir)
+            with open(f"{keys_dir}/{container_name}.pem", 'w', encoding='UTF8', newline='') as f:
                 f.write(key.private_bytes(
                     crypto_serialization.Encoding.PEM,
                     crypto_serialization.PrivateFormat.TraditionalOpenSSL,
@@ -164,10 +171,15 @@ def main(args):
         current_webport += 1
         
     # Write output file for reference
-    with open("output/nested_list.csv", 'w', encoding='UTF-8', newline='') as f:
+    with open(f"{output_dir}/nested_list.csv", 'w', encoding='UTF-8', newline='') as f:
         writer = DictWriter(f, fieldnames=output_headers)
         writer.writeheader()
         writer.writerows(output_rows)
+
+    # Compress output when flag is set for easy scp-ing
+    if args.package_output:
+        package = shutil.make_archive(f"output/Nest_{timestamp}", args.package_format, output_dir)
+        print(f"Easily copy this out of your VM by using a tool like scp: 'scp {os.getlogin()}@{listen_address}:{package} .' Or use WinSCP.")
 
 ####
 # Implementening network forward
