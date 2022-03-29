@@ -28,6 +28,7 @@ parser.add_argument('--external_address', '-e', action='store_true', help="Get e
 parser.add_argument('--local_address', '-l', type=str, help="Specify when you are in a situation where the external IP for the listening address is not desirable.", default='localhost')
 parser.add_argument('--ubuntu-version', '-u', type=str, default="focal", help="Version of Ubuntu the containers will use. Default to focal (20.04). Advised is hirsute or focal")
 
+# Some hard coded options as I see this not changing.
 _network_name = "nestbr0"
 _profile_name = "nestpr0"
 _first_name_cname = "First_Name"
@@ -43,7 +44,11 @@ def main(args):
     # Prepare output environment and file variables
     timestamp = time()
     output_dir = f"output/nest_{timestamp}"
+    keys_dir = f"{output_dir}/keys"
+    # Create output dirs
     os.makedirs(output_dir)
+    if args.output: os.makedirs(keys_dir)
+    # Set output variables for DictWriter
     output_headers = ['container_name','ssh_port', 'web_port', 'user', 'key64']
     output_rows = []
 
@@ -128,7 +133,7 @@ def main(args):
                     "shell": "/bin/bash"
                 }]
             })
-        print(user_data)
+        # print(user_data)
         # Create container
         instance = client.instances.create({
             "name": container_name,
@@ -160,8 +165,6 @@ def main(args):
         })
 
         if args.output:
-            keys_dir = f"{output_dir}/keys"
-            os.makedirs(keys_dir)
             with open(f"{keys_dir}/{container_name}.pem", 'w', encoding='UTF8', newline='') as f:
                 f.write(key.private_bytes(
                     crypto_serialization.Encoding.PEM,
