@@ -14,7 +14,7 @@ from csv import DictReader, DictWriter
 # External libraries
 from cryptography.hazmat.primitives import serialization as crypto_serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
-import pylxd
+import pylxd, pylxd.models
 import pylxd.models.instance as InstanceModel
 
 parser = argparse.ArgumentParser(description="Linux Nester. Creates LXD containers for use with the Linux exercises of the TechGrounds Cloud Engineer.")
@@ -31,8 +31,9 @@ parser.add_argument('--ubuntu-version', '-u', type=str, default="focal", help="V
 # Some hard coded options as I see this not changing.
 _network_name = "nestbr0"
 _profile_name = "nestpr0"
-_first_name_cname = "First_Name"
-_last_name_cname = "Last_Name"
+_first_name_cname = "First_Name" # Column name of First name data
+_last_name_cname = "Last_Name" # Column name of Last Name data
+_email_cname = "E_Mail" # Column name of Email data
 _target_sshport = 22
 _target_webport = 80
 
@@ -49,7 +50,7 @@ def main(args):
     os.makedirs(output_dir)
     if args.output: os.makedirs(keys_dir)
     # Set output variables for DictWriter
-    output_headers = ['container_name','ssh_port', 'web_port', 'user', 'key64']
+    output_headers = ['container_name','ssh_port', 'web_port', 'user', 'e_mail', 'key64']
     output_rows = []
 
     # Init clients
@@ -74,9 +75,26 @@ def main(args):
             "ipv4.nat": "true",
             "ipv6.address": "none"
         })
-        print(client.networks.get('nestbr0'))
+        # print(client.networks.get('nestbr0'))
         # Create forward system
-        os.system(f"lxc network forward create {_network_name} {listen_address}") #TODO use pylxd api instead of CLI tool
+        os.system(f"lxc network forward create {_network_name} {listen_address}") #TODO use pylxd api instead of CLI tool     
+        # response = client.api.networks[_network_name].forwards.post(params={
+        #     "forward": {
+        #         "config": {},
+        #         "description": "Test",
+        #         "listen_address": listen_address,
+        #         "ports": [
+        #             {
+        #                 "description": "",
+        #                 "listen_port": "80",
+        #                 "protocol": "tcp",
+        #                 "target_address": "127.0.0.1",
+        #                 "target_port": "80"
+        #             }
+        #         ]
+        #     }
+        # })
+        # print(response)
     
     # Create a Profile when none exists
     # instructs the usage of latest Ubuntu version with cloud-init support
@@ -161,7 +179,8 @@ def main(args):
             output_headers[1]: current_sshport, #ssh_port
             output_headers[2]: current_webport, #web_port
             output_headers[3]: username, #user
-            output_headers[4]: base64.b64encode(private_key).decode("UTF-8") #key64
+            output_headers[4]: row[_email_cname], #e_mail
+            output_headers[5]: base64.b64encode(private_key).decode("UTF-8") #key64
         })
 
         if args.output:

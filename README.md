@@ -63,8 +63,8 @@ This table assumes you use the default port settings. Ranges can be shrunk or gr
 
 ### Input
 This program requires you to provide the following:
-- A csv with the following headers: 'First_Name,Last_Name,~~E_Mail~~'
-Note: `E_Mail` is not used for anything for now.
+- A csv with the following headers: 'First_Name,Last_Name,E_Mail'
+
 When not using the external IP, provide a local IP through the `-l` parameter.
 
 The following command can be used for an example run when virtualenv is active:
@@ -95,6 +95,7 @@ The `./output`-folder is used for all runs. In this a subfolder is generated for
     - `ssh_port`: The opened SSH port for this container instance
     - `web_port`: The opened Web port for this container instance
     - `user`: The username of the user on the linux container. This is the first name of the participant.
+    - `e_mail`: 
     - `key64`: A base64 encoded private key for future reference.
 
 Advice participants not to use this private key for anything other than this lab as its private key is known to us and assume it has traveled the internet unencrypted. 
