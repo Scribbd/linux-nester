@@ -73,7 +73,7 @@ def main(args):
         client.networks.create(_network_name, description="Nested Network for Linux Labs", type="bridge", config={
             "ipv4.address": "auto",
             "ipv4.nat": "true",
-            "ipv6.address": "none"
+            "ipv6.address": "none",
         })
         # print(client.networks.get('nestbr0'))
         # Create forward system
@@ -104,7 +104,10 @@ def main(args):
     else:
         print(f"Creating instance profile '{_profile_name}'.")
         client.profiles.create(_profile_name, config={
-                "security.nesting": "true"
+                "security.nesting": "true",
+                "limits.memory": "1GB",
+                "limits.memory.enforce": "soft",
+                "limits.cpu": "2"
             }, devices={
             "eth0": {
                 "name": "eth0",
@@ -114,7 +117,8 @@ def main(args):
             "root": {
                 "path": "/",
                 "pool": "default",
-                "type": "disk"
+                "type": "disk",
+                "size": "5GB"
             }
         })
 

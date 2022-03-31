@@ -22,6 +22,16 @@ Achieved:
 - LXD containters are full Linux container with its own init and systemd processes. This allows for installing and running daemon tasks.
 - The containers are configured to be able to run Docker inside. However, this is not recommended.
 
+## Requirements
+- Ubuntu 20.04 or later
+- A skew / instance type that can handle your container load.
+- A roomy HD for the base install and the many containers you are going to use.
+
+The current limitations:
+- CPU limit: 2 threads
+- Memory limit: 1GB
+- Disk storage limit: 5GB
+
 ## Usage
 ### Clone
 This you have to do yourself. First install `git`:
