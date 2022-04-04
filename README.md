@@ -114,6 +114,13 @@ When the `--output/-o` flag is present, a `key`-folder will be generated inside 
 
 When the `-package_output\-p` flag is present, the `./output/Nest-{UNIX_timestamp}/`-folder and subfolders will be compressed to a `.tar` file and made available in the `./output`-folder with `Nest-{UNIX_timestamp}` as its name. The `-package_format\-f` allows one to change compresion methods. Default is a non-compression tar archive.
 
+### Mailing the keys
+There is a companion script over at [Nest-Mailer](https://github.com/techgrounds/nest-mailer/blob/main/input/example.csv) that uses the output CSV-file to send the keys to participants with connection information.
+
+What you need is:
+- The output CSV-file
+- The public IP
+
 # Administration
 This program uses LXC and LXD. LXD provides a comprehensive CLI tool for administrative functions for LXC. You can find an introduction [here](https://linuxcontainers.org/lxd/introduction/). A more comprehensive guide to all commands is [here](https://linuxcontainers.org/lxd/docs/master/)
 
