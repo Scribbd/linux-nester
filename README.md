@@ -32,21 +32,37 @@ The current limitations:
 - Memory limit: 1GB
 - Disk storage limit: 5GB
 
-## Usage
-### Clone
+## Preparations
+### Host networking
+When using a cloud computer as your host make certain the following inbound ALLOW rules are applied to your (N)SG:
+
+| Protocol | Port range    | Source    | Description                                         |
+|----------|---------------|-----------|-----------------------------------------------------|
+| TCP      | 22            | [Your IP] | Admin access to LXD host                            |
+| TCP      | 52200 - 52299 | 0.0.0.0   | Forwarded ssh ports on host to LXD containers       |
+| TCP      | 58000 - 58099 | 0.0.0.0   | Forwarded http / web ports on host to LXD container |
+
+This table assumes you use the default port settings. Ranges can be shrunk or grown to fit the actual number of containers.
+
+### Cloning
+This repository is internal so you might need to login with a PAT.
+
+When you have a PAT token for Github:
 This you have to do yourself. First install `git`:
 - `sudo apt update && sudo install git -y`
 Then clone this repository.
 - `git clone https://github.com/techgrounds/linux-nester.git`
 
-This repository is internal so you might need to login with a PAT. I you don't want to you could also use VSCode. It will bring over git credentials to the remote or allow you to authenticate with the browser on your localhost.
+If you don't want to you could also use VSCode. It will bring over git credentials to the remote or allow you to authenticate with the browser on your localhost.
 - In VSCode install the following plugin: [Remote - SSH](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh).
+- Optional: When using key authentication add your key to your SSH-agent with `ssh-add` from [OpenSSH](https://winaero.com/enable-openssh-client-windows-10/).
 - Then use `CTRL`+`SHIFT`+`P` to get the command pallet.
 - Type `>Remote-SSH: Connect to Host...` autocomplete should also be able to pin it down with `SSH connect`.
+- Use `ubuntu` as username, this is the default for Ubuntu images on AWS.
 - Clone the repo!
 - You can get into a remote terminal with `ctrl`+\` and install git if the options are greyed out.
 
-### Preparations
+### Install-script
 Make sure the following is installed on your host:
 - Python3
 - Python3-pip
@@ -60,17 +76,7 @@ You can run the following command to install the dependencies and activate a vir
 . ./install.sh
 ```
 
-### Host networking
-When using a cloud computer as your host make certain the following inbound ALLOW rules are applied to your (N)SG:
-
-| Protocol | Port range    | Source    | Description                                         |
-|----------|---------------|-----------|-----------------------------------------------------|
-| TCP      | 22            | [Your IP] | Admin access to LXD host                            |
-| TCP      | 52200 - 52299 | 0.0.0.0   | Forwarded ssh ports on host to LXD containers       |
-| TCP      | 58000 - 58099 | 0.0.0.0   | Forwarded http / web ports on host to LXD container |
-
-This table assumes you use the default port settings. Ranges can be shrunk or grown to fit the actual number of containers.
-
+## Usage
 ### Input
 This program requires you to provide the following:
 - A csv with the following headers: 'First_Name,Last_Name,E_Mail'
@@ -94,10 +100,10 @@ Optional parameters:
 
 ### Base command
 You will most likely get the desired result with using the following command:
-`python3 ./nest.py input/[file].csv -o -p -e`
+`python3 ./nest.py input/[file].csv`
 
-If you use windows opt for a zip archive:
-`python3 ./nest.py input/[file].csv -o -p -e -f zip`
+If you use linux opt for a tar archive:
+`python3 ./nest.py input/[file].csv -f tar`
 
 ### Output
 The `./output`-folder is used for all runs. In this a subfolder is generated for each individual run: `./output/Nest-{UNIX_timestamp}/`. Within this folder a `output.csv` file will contain the following:

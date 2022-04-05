@@ -19,12 +19,12 @@ import pylxd.models.instance as InstanceModel
 
 parser = argparse.ArgumentParser(description="Linux Nester. Creates LXD containers for use with the Linux exercises of the TechGrounds Cloud Engineer.")
 parser.add_argument('participant_file', type=argparse.FileType('r', encoding='UTF-8-sig'), help="Path to csv file with at least the following headers: First_Name,Last_Name,E_Mail.")
-parser.add_argument('--output', '-o', action='store_true', help="Include flag to also output seperate keyfiles.")
-parser.add_argument('--package_output', '-p', action='store_true', help="Include flag to compress all key files")
-parser.add_argument('--package_format', '-f', type=str, choices=['tar', 'zip', 'gztar', 'bztar', 'xztar'], default='tar', help="Set archiving method. Uses shutil. Look at shutil documentation what the options are.")
+parser.add_argument('--no_output', '-o', action='store_false', help="Include flag to not output seperate keyfiles.")
+parser.add_argument('--no_package_output', '-p', action='store_false', help="Include flag to not compress all key files")
+parser.add_argument('--package_format', '-f', type=str, choices=['tar', 'zip', 'gztar', 'bztar', 'xztar'], default='zip', help="Set archiving method. Uses shutil. Look at shutil documentation what the options are.")
 parser.add_argument('--sshportstart', '-s', type=int, default=52200, help="Ports will be opened for ssh from the given value forward.")
 parser.add_argument('--webportstart', '-w', type=int, default=58000, help="Ports will be opened for web from the given value forward.")
-parser.add_argument('--external_address', '-e', action='store_true', help="Get external address and use that as listening address. Overides -l paramater")
+parser.add_argument('--no_external_address', '-e', action='store_false', help="Get external address and use that as listening address. Overides -l paramater")
 parser.add_argument('--local_address', '-l', type=str, help="Specify when you are in a situation where the external IP for the listening address is not desirable.", default='localhost')
 parser.add_argument('--ubuntu-version', '-u', type=str, default="focal", help="Version of Ubuntu the containers will use. Default to focal (20.04). Advised is hirsute or focal")
 
@@ -48,7 +48,7 @@ def main(args):
     keys_dir = f"{output_dir}/keys"
     # Create output dirs
     os.makedirs(output_dir)
-    if args.output: os.makedirs(keys_dir)
+    if args.no_output: os.makedirs(keys_dir)
     # Set output variables for DictWriter
     output_headers = ['container_name','ssh_port', 'web_port', 'user', 'e_mail', 'key64']
     output_rows = []
@@ -58,7 +58,7 @@ def main(args):
     
     # Set listen address based on config
     listen_address = args.local_address
-    if args.external_address:
+    if args.no_external_address:
         listen_address = requests.get('https://checkip.amazonaws.com').text.strip()
         print(f"Using external IP: {listen_address}")
 
@@ -187,7 +187,7 @@ def main(args):
             output_headers[5]: base64.b64encode(private_key).decode("UTF-8") #key64
         })
 
-        if args.output:
+        if args.no_output:
             with open(f"{keys_dir}/{container_name}.pem", 'w', encoding='UTF8', newline='') as f:
                 f.write(key.private_bytes(
                     crypto_serialization.Encoding.PEM,
@@ -205,7 +205,7 @@ def main(args):
         writer.writerows(output_rows)
 
     # Compress output when flag is set for easy scp-ing
-    if args.package_output:
+    if args.no_package_output:
         package = shutil.make_archive(f"output/Nest_{timestamp}", args.package_format, output_dir)
         print(f"Easily copy this out of your VM by using a tool like scp: 'scp {os.getlogin()}@{listen_address}:{package} .' Or use WinSCP.")
 
