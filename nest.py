@@ -7,7 +7,7 @@
 # - Add row of login data to csv
 # - output keys / compress output
 
-import argparse, yaml, os, base64, requests, shutil
+import argparse, yaml, os, base64, requests, shutil, socket
 from time import sleep, time
 from csv import DictReader, DictWriter
 
@@ -24,8 +24,8 @@ parser.add_argument('--no_package_output', '-p', action='store_false', help="Inc
 parser.add_argument('--package_format', '-f', type=str, choices=['tar', 'zip', 'gztar', 'bztar', 'xztar'], default='zip', help="Set archiving method. Uses shutil. Look at shutil documentation what the options are.")
 parser.add_argument('--sshportstart', '-s', type=int, default=52200, help="Ports will be opened for ssh from the given value forward.")
 parser.add_argument('--webportstart', '-w', type=int, default=58000, help="Ports will be opened for web from the given value forward.")
-parser.add_argument('--no_external_address', '-e', action='store_false', help="Get external address and use that as listening address. Overides -l paramater")
-parser.add_argument('--local_address', '-l', type=str, help="Specify when you are in a situation where the external IP for the listening address is not desirable.", default='localhost')
+parser.add_argument('--external_address', '-e', action='store_true', help="Get external address and use that as listening address. Overides -l paramater")
+parser.add_argument('--manual_address', '-m', type=str, help="Specify when you are in a situation where the external IP for the listening address is not desirable.")
 parser.add_argument('--ubuntu-version', '-u', type=str, default="focal", help="Version of Ubuntu the containers will use. Default to focal (20.04). Advised is hirsute or focal")
 
 # Some hard coded options as I see this not changing.
@@ -55,12 +55,18 @@ def main(args):
 
     # Init clients
     client = pylxd.Client()
-    
-    # Set listen address based on config
-    listen_address = args.local_address
-    if args.no_external_address:
+
+    # Get IP for listening_address
+    if args.external_address:
         listen_address = requests.get('https://checkip.amazonaws.com').text.strip()
         print(f"Using external IP: {listen_address}")
+    elif args.manual_address:
+        listen_address = args.manual_address
+    else:
+        listen_address = socket.gethostbyname(socket.gethostname())
+        if listen_address == "127.0.0.1" or listen_address == "127.0.1.1":
+            print(f"FATAL: Python can not determin a correct external IP, use '-m [MANUAL_IP]' instead. Cannot use {listen_address}.")
+            exit(1)
 
     ### Setup network and profile for the Nested Linux Containers.
     print("Setting up lxd profiles.")
