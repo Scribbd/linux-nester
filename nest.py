@@ -81,26 +81,13 @@ def main(args):
             "ipv4.nat": "true",
             "ipv6.address": "none",
         })
-        # print(client.networks.get('nestbr0'))
         # Create forward system
-        os.system(f"lxc network forward create {_network_name} {listen_address}") #TODO use pylxd api instead of CLI tool     
-        # response = client.api.networks[_network_name].forwards.post(params={
-        #     "forward": {
-        #         "config": {},
-        #         "description": "Test",
-        #         "listen_address": listen_address,
-        #         "ports": [
-        #             {
-        #                 "description": "",
-        #                 "listen_port": "80",
-        #                 "protocol": "tcp",
-        #                 "target_address": "127.0.0.1",
-        #                 "target_port": "80"
-        #             }
-        #         ]
-        #     }
-        # })
-        # print(response)
+        response = client.api.networks[_network_name].forwards.post(json={
+            "config": {},
+            "description": "",
+            "listen_address": listen_address,
+            "ports": []
+        })
     
     # Create a Profile when none exists
     # instructs the usage of latest Ubuntu version with cloud-init support
@@ -134,7 +121,7 @@ def main(args):
     current_webport = args.webportstart
     for row in csv_reader:
         username = row[_first_name_cname].replace(" ", "_").lower()
-        container_name = "Nest-" + row[_first_name_cname][0:2].replace(" ", "-") + "-" + row[_last_name_cname].replace(" ", "-")
+        container_name = "Nest-" + row[_first_name_cname][0:2].replace(" ", "-") + "-" + row[_last_name_cname][0:12].replace(" ", "-")
         print(f"Creating container: {container_name}")
 
         # Create SSH Key for participant
@@ -161,7 +148,10 @@ def main(args):
                     "shell": "/bin/bash"
                 }]
             })
-        # print(user_data)
+
+        container_profile_name = container_name + "-pr0"
+        print(f"Create Cloud-Init profile for {container_name}: {container_profile_name}")
+        client.profiles.create(container_profile_name, config={ "user.user-data": user_data })
         # Create container
         instance = client.instances.create({
             "name": container_name,
@@ -172,10 +162,7 @@ def main(args):
                 "server": "https://cloud-images.ubuntu.com/releases",
                 "protocol": "simplestreams",
             },
-            "config": {
-                "user.user-data": user_data
-            },
-            "profiles": ["default", _profile_name]
+            "profiles": ["default", _profile_name, container_profile_name]
         }, wait=True) # Wait is needed as other steps require an existing instance
         instance.start(wait=True)
         # Create forwarding rules
@@ -213,7 +200,7 @@ def main(args):
     # Compress output when flag is set for easy scp-ing
     if args.no_package_output:
         package = shutil.make_archive(f"output/Nest_{timestamp}", args.package_format, output_dir)
-        print(f"Easily copy this out of your VM by using a tool like scp: 'scp {os.getlogin()}@{listen_address}:{package} .' Or use WinSCP.")
+        print(f"Easily copy this out of your VM by using a tool like scp on your own computer: 'scp {os.getlogin()}@{listen_address}:{package} .' Or use WinSCP.")
 
 ####
 # Implementening network forward
@@ -221,26 +208,25 @@ def main(args):
 
 def forward_port(client:pylxd.Client, listen_address:str, instance:InstanceModel.Instance, target_port:int, source_port:int):
     # Get ipv4 from current instance
-    # Ipv4 takes a bit to get going it seems compared to Ipv6
+    # Ipv4 takes a bit to get going it seems compared to Ipv6, this loop ensures that it is ready for the next step
     inet = []
     while not inet:
         address_state = instance.state().network['eth0']['addresses']
         inet = [dict_ for dict_ in address_state if dict_['family'] == "inet"]
         if not inet: sleep(1)
+        
+    # Get current portforward configuration
+    config = client.api.networks[_network_name].forwards[listen_address].get().json()['metadata']
+    config['ports'].append({
+        "description": "",
+        "listen_port": str(source_port),
+        "target_port": str(target_port),
+        "target_address": inet[0]['address'],
+        "protocol": "tcp"
+    })
     
-    # I cannot figure out how to use pylxd api to do this within the api.
-    # client.api.post(path=f"/networks/{_network_name}/forwards", params={
-    #     "listen_address": "0.0.0.0",
-    #     "ports": [{
-    #         "listen_port": source_port,
-    #         "protocol": "tcp",
-    #         "target_address": inet[0]['address'],
-    #         "target_port": target_port
-    #     }]
-    # })
-
-    # Using the cli tool for now. TODO find a way to us pyxld
-    os.system(f"lxc network forward port add {_network_name} {listen_address} tcp {source_port} {inet[0]['address']} {target_port}")
+    # PUT the added portforward configuration
+    client.api.networks[_network_name].forwards[listen_address].put(json=config)
 
 if __name__ == "__main__":
     main(parser.parse_args())

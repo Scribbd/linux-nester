@@ -89,7 +89,7 @@ This program requires you to provide the following:
 When not using the external IP, provide a local IP through the `-l` parameter.
 
 The following command can be used for an example run when virtualenv is active:
-`python3 nest.py input/example.csv -o -l [localIP]`
+`python3 nest.py input/example.csv --manual-address [localIP]`
 
 Optional parameters:
 | Name               | Flag | Default Value | Description                                                                                                                           |
@@ -144,13 +144,27 @@ When you need to administer a specific container you can do the following:
 - Use `lxc list` to identify if the container is running
     - Should it have stopped you can use `lxc start {NAME}`
 - If the problem started with a firewall blocking SSH traffic you can get root access with the following: `lxc exec {name} bash`
-    - You are now root in the given container.
+    - You are now root in the given container and can now fix the firewall issue.
 - If no one is able to access the containers it might mean your public IP got reasigned.
     - Check current IP in the console
     - Use the following command `lxc network forward list nestbr0`
     - Check if this listener address is still the same
     - If not use the following command `lxc network forward edit nestbr0 {Listed_IP}`
     - Update the `listener_address:` line, save, and reload the daemon with `sudo snap restart lxd.daemon`
-
+- If the container is beyond repair. 
+    - Identify the container name from the `nested_list.csv`
+    - Delete it with `lxc delete [name] --force`
+    - From here on out you have two options:
+        - Launch a new instance with the profiles:
+            - All containers have their own profile available. They are named after the container like: `Test-Te-Tester-pr0`
+            - You can use `lxc profile list` to see all profiles
+            - Launch the container with `lxc launch images:ubuntu/20.04 [CONTAINER_NAME] -p default -p nestpr0 -p [CONTAINER_PROFILE_NAME]`
+            - Get the current IP from the new container with `lxc list --columns "n4"`
+            - Edit the forward configuration with `lxc network forward edit nestbr0 [HOST_IP]`
+        - Run the nest.py program with a modified csv file that contains only the broken container.
+            - Delete the port forwards to the system `lxc network forward port remove nestbr0 [HOST IP] 580xx` and `lxc network forward port remove nestbr0 [HOST_IP] 580xx`
+            - Delete the profile of the container with `lxc profile delete [CONTAINER_PROFILE_NAME]`
+            - Run nest.py with a modified file using the `-s` en `-w` flags on the old port numbers. `python3 nest.py input/[file].csv -s 522xx -w 580xx`
+            - Send over the newly generated key to the participant
 # End of life
 A host that has outlived their stay should be removed as a whole. This script does not have an automated cleanup feature that enables recycling of hosts. Cattle not pets.

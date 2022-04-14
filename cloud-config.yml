@@ -1,0 +1,15 @@
+---
+# Cloud config file for backup should a container really fail.
+# Please edit the file to your needs.
+
+config:
+  user.user-data: |
+    #cloud-config
+    users:
+      - name: [USERNAME]
+        ssh-authorized-keys:
+          - [PUBLIC KEY OPENSSH](ssh-rsa xxxxxx)
+        sudo:
+          - "ALL=(ALL) NOPASSWD:ALL"
+        groups: sudo
+        shell: "/bin/bash"
