@@ -82,7 +82,7 @@ def main(args):
             "ipv6.address": "none",
         })
         # Create forward system
-        response = client.api.networks[_network_name].forwards.post(json={
+        client.api.networks[_network_name].forwards.post(json={
             "config": {},
             "description": "",
             "listen_address": listen_address,
