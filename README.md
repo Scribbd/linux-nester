@@ -54,7 +54,7 @@ This repository is internal so you might need to login with a PAT.
 
 When you have a PAT token for Github:
 This you have to do yourself. First install `git`:
-- `sudo apt update && sudo install git -y`
+- `sudo apt update && sudo apt install git -y`
 Then clone this repository.
 - `git clone https://github.com/techgrounds/linux-nester.git`
 
