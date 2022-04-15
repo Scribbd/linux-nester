@@ -58,7 +58,7 @@ This you have to do yourself. First install `git`:
 Then clone this repository.
 - `git clone https://github.com/techgrounds/linux-nester.git`
 
-If you don't want to use PATs you could also use VSCode. It will bring over git credentials to the remote or allow you to authenticate with the browser on your localhost.
+If you don't want to use PATs you can also use VSCode. It will bring over your GitHub credentials to the remote or allow you to authenticate with the browser on your localhost.
 - In VSCode install the following plugin: [Remote - SSH](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh).
 - Optional: When using key authentication add your key to your SSH-agent with `ssh-add` from [OpenSSH](https://winaero.com/enable-openssh-client-windows-10/).
 - Then use `CTRL`+`SHIFT`+`P` to get the command pallet.
@@ -133,23 +133,23 @@ There is a companion script over at [Nest-Mailer](https://github.com/techgrounds
 
 What you need is:
 - The output CSV-file
-- The public IP
+- The IP of the listener `lxc network forward list nestbr0`
 
 # Administration
-This program uses LXC and LXD. LXD provides a comprehensive CLI tool for administrative functions for LXC. You can find an introduction [here](https://linuxcontainers.org/lxd/introduction/). A more comprehensive guide to all commands is [here](https://linuxcontainers.org/lxd/docs/master/)
+This program uses LXC and LXD. LXD provides a comprehensive CLI tool for administrative functions for LXC. You can find an introduction [here](https://linuxcontainers.org/lxd/introduction/). A more comprehensive guide to all commands can be found [here](https://linuxcontainers.org/lxd/docs/master/).
 
 ## Troubleshooting
 When you need to administer a specific container you can do the following:
 - SSH into the LXD host
 - Use `lxc list` to identify if the container is running
-    - Should it have stopped you can use `lxc start {NAME}`
-- If the problem started with a firewall blocking SSH traffic you can get root access with the following: `lxc exec {name} bash`
+    - Should it have stopped you can use `lxc start [NAME]`
+- If the problem started with a firewall blocking SSH traffic you can get root access with the following: `lxc exec [NAME] bash`
     - You are now root in the given container and can now fix the firewall issue.
 - If no one is able to access the containers it might mean your public IP got reasigned.
     - Check current IP in the console
     - Use the following command `lxc network forward list nestbr0`
     - Check if this listener address is still the same
-    - If not use the following command `lxc network forward edit nestbr0 {Listed_IP}`
+    - If not use the following command `lxc network forward edit nestbr0 [LISTENER_IP]`
     - Update the `listener_address:` line, save, and reload the daemon with `sudo snap restart lxd.daemon`
 - If the container is beyond repair. 
     - Identify the container name from the `nested_list.csv`
@@ -162,7 +162,7 @@ When you need to administer a specific container you can do the following:
             - Get the current IP from the new container with `lxc list --columns "n4"`
             - Edit the forward configuration with `lxc network forward edit nestbr0 [HOST_IP]`
         - Run the nest.py program with a modified csv file that contains only the broken container.
-            - Delete the port forwards to the system `lxc network forward port remove nestbr0 [HOST IP] 580xx` and `lxc network forward port remove nestbr0 [HOST_IP] 580xx`
+            - Delete the port forwards to the system `lxc network forward port remove nestbr0 [HOST IP] 580xx` and `lxc network forward port remove nestbr0 [HOST_IP] 522xx`
             - Delete the profile of the container with `lxc profile delete [CONTAINER_PROFILE_NAME]`
             - Run nest.py with a modified file using the `-s` en `-w` flags on the old port numbers. `python3 nest.py input/[file].csv -s 522xx -w 580xx`
             - Send over the newly generated key to the participant
