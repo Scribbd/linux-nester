@@ -31,9 +31,9 @@ parser.add_argument('--ubuntu-version', '-u', type=str, default="focal", help="V
 # Some hard coded options as I see this not changing.
 _network_name = "nestbr0"
 _profile_name = "nestpr0"
-_first_name_cname = "First_Name" # Column name of First name data
-_last_name_cname = "Last_Name" # Column name of Last Name data
-_email_cname = "E_Mail" # Column name of Email data
+_first_name_cname = "First Name" # Column name of First name data
+_last_name_cname = "Last Name" # Column name of Last Name data
+_email_cname = "E Mail" # Column name of Email data
 _target_sshport = 22
 _target_webport = 80
 

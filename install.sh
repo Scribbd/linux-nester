@@ -14,4 +14,4 @@ python3 -m venv .venv
 . ./.venv/bin/activate
 python3 -m pip install -r requirements.txt
 
-echo "You are ready to go. Run python3 nestgen.py [INPUT]"
+echo "You are ready to go. Run python3 nest.py [INPUT]"
