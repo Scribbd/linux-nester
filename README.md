@@ -129,7 +129,7 @@ By default a `key`-folder will be generated inside the `./output/Nest-{UNIX_time
 By default the `./output/Nest-{UNIX_timestamp}/`-folder and subfolders will be compressed to a `.zip` archive and made available in the `./output`-folder with `Nest-{UNIX_timestamp}` as its name. The `-package_format\-f` allows one to change compresion methods. This can be dissabled with the `-no_package_output\-p` flag.
 
 ## Mailing the keys
-There is a companion script over at [Nest-Mailer](https://github.com/techgrounds/nest-mailer/blob/main/input/example.csv) that uses the output CSV-file to send the keys to participants with connection information.
+There is a companion script over at [Nest-Mailer](https://github.com/Scribbd/nest-mailer/blob/main/input/example.csv) that uses the output CSV-file to send the keys to participants with connection information.
 
 What you need is:
 - The output CSV-file
