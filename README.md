@@ -56,7 +56,7 @@ When you have a PAT token for Github:
 This you have to do yourself. First install `git`:
 - `sudo apt update && sudo apt install git -y`
 Then clone this repository.
-- `git clone https://github.com/techgrounds/linux-nester.git`
+- `git clone https://github.com/scribbd/linux-nester.git`
 
 If you don't want to use PATs you can also use VSCode. It will bring over your GitHub credentials to the remote or allow you to authenticate with the browser on your localhost.
 - In VSCode install the following plugin: [Remote - SSH](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh).
